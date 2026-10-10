@@ -1,10 +1,9 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vinted Manager & Guardaroba</title>
-  <!-- Tailwind CSS per stile moderno e responsive su mobile -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
@@ -73,9 +72,7 @@
     </div>
 
     <!-- Lista Capi -->
-    <div id="itemsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <!-- Capi iniettati via JS -->
-    </div>
+    <div id="itemsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     
     <div id="emptyState" class="hidden text-center py-12 text-slate-400">
       <i class="fa-solid fa-box-open text-4xl mb-3"></i>
@@ -86,30 +83,29 @@
 
   <!-- Modal Inserimento/Modifica Capo -->
   <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       
       <!-- Modal Header -->
       <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
         <h3 id="modalTitle" class="font-bold text-base text-slate-900">Nuovo Capo</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1">
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
 
-      <!-- Modal Body (Scorrevole) -->
-      <form id="itemForm" onsubmit="saveItem(event)" class="p-5 overflow-y-auto space-y-4 flex-1">
+      <!-- Modal Body -->
+      <form id="itemForm" onsubmit="handleFormSubmit(event)" class="p-5 overflow-y-auto space-y-4 flex-1">
         <input type="hidden" id="itemId" />
 
-        <!-- Foto di Copertina (anteprima) -->
+        <!-- Foto di Copertina -->
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1.5">Foto di Riferimento (opzionale)</label>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1.5">Foto di Riferimento</label>
           <div class="flex items-center gap-3">
             <div id="photoPreviewBox" class="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-slate-50 text-slate-300">
               <i class="fa-solid fa-camera text-xl"></i>
             </div>
             <div class="flex-1">
-              <input type="file" id="itemPhoto" accept="image/*" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100" onchange="previewImage(event)" />
-              <p class="text-[11px] text-slate-400 mt-1">Carica una foto per riconoscere il capo al volo.</p>
+              <input type="file" id="itemPhoto" accept="image/*" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700" onchange="previewImage(event)" />
             </div>
           </div>
         </div>
@@ -117,9 +113,9 @@
         <!-- Categoria e Marca -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Categoria *</label>
-            <select id="itemCategory" required class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
-              <option value="">Seleziona...</option>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Categoria</label>
+            <select id="itemCategory" class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="Generico">Generico</option>
               <option value="Top & T-shirt">Top & T-shirt</option>
               <option value="Camicie & Bluse">Camicie & Bluse</option>
               <option value="Maglioni & Felpe">Maglioni & Felpe</option>
@@ -132,28 +128,28 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Marca *</label>
-            <input type="text" id="itemBrand" required placeholder="es. Zara, Vintage..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Marca</label>
+            <input type="text" id="itemBrand" placeholder="es. Zara, Vintage..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
           </div>
         </div>
 
         <!-- Taglia e Colore -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Taglia *</label>
-            <input type="text" id="itemSize" required placeholder="es. S, M, 42, 38..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Taglia</label>
+            <input type="text" id="itemSize" placeholder="es. S, M, 42..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Colore *</label>
-            <input type="text" id="itemColor" required placeholder="es. Nero, Panna..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Colore</label>
+            <input type="text" id="itemColor" placeholder="es. Nero, Panna..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
           </div>
         </div>
 
         <!-- Condizione e Materiale -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Condizione *</label>
-            <select id="itemCondition" required class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Condizione</label>
+            <select id="itemCondition" class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
               <option value="Nuovo con cartellino">Nuovo con cartellino</option>
               <option value="Nuovo senza cartellino">Nuovo senza cartellino</option>
               <option value="Ottime condizioni" selected>Ottime condizioni</option>
@@ -163,15 +159,15 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Materiale</label>
-            <input type="text" id="itemMaterial" placeholder="es. 100% Cotone, Seta..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <input type="text" id="itemMaterial" placeholder="es. Cotone, Lana..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
           </div>
         </div>
 
         <!-- Prezzo e Stato -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Prezzo (€) *</label>
-            <input type="number" step="0.5" id="itemPrice" required placeholder="es. 15" class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Prezzo (€)</label>
+            <input type="number" step="0.5" id="itemPrice" placeholder="es. 10" class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Stato</label>
@@ -198,41 +194,50 @@
         <!-- Descrizione -->
         <div>
           <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Descrizione / Dettagli</label>
-          <textarea id="itemDesc" rows="3" placeholder="Note su vestibilità, difetti, dettagli particolari..." class="w-full text-sm rounded-lg border border-slate-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+          <textarea id="itemDesc" rows="3" placeholder="Note su vestibilità, difetti..." class="w-full text-sm rounded-lg border border-slate-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
         </div>
 
         <!-- Modal Footer -->
         <div class="pt-3 border-t border-slate-100 flex gap-2">
-          <button type="button" onclick="closeModal()" class="flex-1 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">Annulla</button>
-          <button type="submit" class="flex-1 py-2 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow transition">Salva Capo</button>
+          <button type="button" onclick="closeModal()" class="flex-1 py-2 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg">Annulla</button>
+          <button type="submit" id="btnSubmit" class="flex-1 py-2 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow">Salva Capo</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Toast Notifica Copiato -->
+  <!-- Toast Notifica -->
   <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
-    <i class="fa-solid fa-check text-emerald-400"></i> <span id="toastMsg">Testo Vinted copiato negli appunti!</span>
+    <i class="fa-solid fa-check text-emerald-400"></i> <span id="toastMsg">Operazione completata!</span>
   </div>
 
   <script>
-    // --- DATABASE INDEXEDDB ---
-    let db;
+    let dbInstance = null;
     let currentPhotoBase64 = null;
 
-    const request = indexedDB.open("VintedManagerDB", 2);
-    request.onupgradeneeded = (e) => {
-      db = e.target.result;
-      if (!db.objectStoreNames.contains("items")) {
-        db.createObjectStore("items", { keyPath: "id", autoIncrement: true });
-      }
-    };
-    request.onsuccess = (e) => {
-      db = e.target.result;
-      renderItems();
-    };
+    // Connessione sicura a IndexedDB
+    function getDB() {
+      return new Promise((resolve, reject) => {
+        if (dbInstance) return resolve(dbInstance);
+        const req = indexedDB.open("VintedManagerApp", 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains("items")) {
+            db.createObjectStore("items", { keyPath: "id", autoIncrement: true });
+          }
+        };
+        req.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          resolve(dbInstance);
+        };
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
 
-    // --- ANTEPRIMA IMMAGINE ---
+    // Inizializza subito
+    getDB().then(() => renderItems()).catch(err => console.error(err));
+
+    // Gestione Foto
     function previewImage(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -244,48 +249,60 @@
       reader.readAsDataURL(file);
     }
 
-    // --- SALVATAGGIO / AGGIORNAMENTO ---
-    function saveItem(e) {
+    // Salvataggio infallibile
+    async function handleFormSubmit(e) {
       e.preventDefault();
-      const id = document.getElementById("itemId").value;
-      const itemData = {
-        category: document.getElementById("itemCategory").value,
-        brand: document.getElementById("itemBrand").value,
-        size: document.getElementById("itemSize").value,
-        color: document.getElementById("itemColor").value,
-        condition: document.getElementById("itemCondition").value,
-        material: document.getElementById("itemMaterial").value,
-        price: parseFloat(document.getElementById("itemPrice").value) || 0,
-        status: document.getElementById("itemStatus").value,
-        description: document.getElementById("itemDesc").value,
-        spalle: document.getElementById("mSpalle").value,
-        petto: document.getElementById("mPetto").value,
-        vita: document.getElementById("mVita").value,
-        lunghezza: document.getElementById("mLunghezza").value,
-        photo: currentPhotoBase64,
-        updatedAt: new Date().toISOString()
-      };
+      try {
+        const db = await getDB();
+        const id = document.getElementById("itemId").value;
+        const priceVal = parseFloat(document.getElementById("itemPrice").value);
 
-      const tx = db.transaction("items", "readwrite");
-      const store = tx.objectStore("items");
-      if (id) {
-        itemData.id = parseInt(id);
-        store.put(itemData);
-      } else {
-        itemData.createdAt = new Date().toISOString();
-        store.add(itemData);
+        const itemData = {
+          category: document.getElementById("itemCategory").value || "Generico",
+          brand: document.getElementById("itemBrand").value || "Senza marca",
+          size: document.getElementById("itemSize").value || "-",
+          color: document.getElementById("itemColor").value || "-",
+          condition: document.getElementById("itemCondition").value || "Ottime condizioni",
+          material: document.getElementById("itemMaterial").value || "",
+          price: isNaN(priceVal) ? 0 : priceVal,
+          status: document.getElementById("itemStatus").value || "DRAFT",
+          description: document.getElementById("itemDesc").value || "",
+          spalle: document.getElementById("mSpalle").value || "",
+          petto: document.getElementById("mPetto").value || "",
+          vita: document.getElementById("mVita").value || "",
+          lunghezza: document.getElementById("mLunghezza").value || "",
+          photo: currentPhotoBase64,
+          updatedAt: new Date().toISOString()
+        };
+
+        const tx = db.transaction("items", "readwrite");
+        const store = tx.objectStore("items");
+
+        if (id) {
+          itemData.id = parseInt(id);
+          store.put(itemData);
+        } else {
+          itemData.createdAt = new Date().toISOString();
+          store.add(itemData);
+        }
+
+        tx.oncomplete = () => {
+          closeModal();
+          renderItems();
+          showToast("Capo salvato con successo!");
+        };
+        tx.onerror = (err) => {
+          alert("Errore salvataggio nel database: " + err.target.error);
+        };
+      } catch (err) {
+        alert("Errore imprevisto: " + err.message);
       }
-
-      tx.oncomplete = () => {
-        closeModal();
-        renderItems();
-        showToast("Capo salvato con successo!");
-      };
     }
 
-    // --- ELIMINAZIONE CAPO ---
-    function deleteItem(id) {
+    // Eliminazione
+    async function deleteItem(id) {
       if (confirm("Vuoi davvero eliminare questo capo?")) {
+        const db = await getDB();
         const tx = db.transaction("items", "readwrite");
         tx.objectStore("items").delete(id);
         tx.oncomplete = () => {
@@ -295,15 +312,16 @@
       }
     }
 
-    // --- MODIFICA CAPO ---
-    function editItem(id) {
+    // Modifica
+    async function editItem(id) {
+      const db = await getDB();
       const tx = db.transaction("items", "readonly");
       const req = tx.objectStore("items").get(id);
       req.onsuccess = () => {
         const item = req.result;
         if (!item) return;
         document.getElementById("itemId").value = item.id;
-        document.getElementById("itemCategory").value = item.category || "";
+        document.getElementById("itemCategory").value = item.category || "Generico";
         document.getElementById("itemBrand").value = item.brand || "";
         document.getElementById("itemSize").value = item.size || "";
         document.getElementById("itemColor").value = item.color || "";
@@ -328,8 +346,9 @@
       };
     }
 
-    // --- COPIA DESCRIZIONE PER VINTED ---
-    function copyVinted(id) {
+    // Copia per Vinted
+    async function copyVinted(id) {
+      const db = await getDB();
       const tx = db.transaction("items", "readonly");
       const req = tx.objectStore("items").get(id);
       req.onsuccess = () => {
@@ -344,34 +363,30 @@
         if (hasMeasures) {
           text += `\n📐 Misure in piano:\n`;
           if (it.spalle) text += `- Spalle: ${it.spalle} cm\n`;
-          if (it.petto) text += `- Ascella-ascella (petto): ${it.petto} cm\n`;
+          if (it.petto) text += `- Ascella-ascella: ${it.petto} cm\n`;
           if (it.vita) text += `- Vita: ${it.vita} cm\n`;
           if (it.lunghezza) text += `- Lunghezza: ${it.lunghezza} cm\n`;
         }
 
-        if (it.description) {
-          text += `\n${it.description}\n`;
-        }
+        if (it.description) text += `\n${it.description}\n`;
         text += `\n📦 Spedizione rapida e accurata!`;
 
         navigator.clipboard.writeText(text).then(() => {
-          showToast("Descrizione copiata! Pronta per Vinted.");
+          showToast("Descrizione copiata per Vinted!");
         });
       };
     }
 
-    // --- RENDERING LISTA E CONTEGGI ---
-    function renderItems() {
-      if (!db) return;
+    // Render lista
+    async function renderItems() {
+      const db = await getDB();
       const tx = db.transaction("items", "readonly");
       const req = tx.objectStore("items").getAll();
-      const search = document.getElementById("searchInput").value.toLowerCase();
+      const search = (document.getElementById("searchInput").value || "").toLowerCase();
       const statusFilter = document.getElementById("statusFilter").value;
 
       req.onsuccess = () => {
         const items = req.result || [];
-        
-        // Calcolo contatori
         let cDraft = 0, cReady = 0, cOnline = 0, cSold = 0;
         items.forEach(it => {
           if (it.status === "DRAFT") cDraft++;
@@ -384,12 +399,10 @@
         document.getElementById("countOnline").innerText = cOnline;
         document.getElementById("countSold").innerText = cSold;
 
-        // Filtro
         const filtered = items.filter(it => {
           const matchStatus = (statusFilter === "ALL") || (it.status === statusFilter);
           const fullText = `${it.brand} ${it.category} ${it.size} ${it.color} ${it.material} ${it.description}`.toLowerCase();
-          const matchSearch = fullText.includes(search);
-          return matchStatus && matchSearch;
+          return matchStatus && fullText.includes(search);
         });
 
         const container = document.getElementById("itemsContainer");
@@ -429,7 +442,7 @@
                 ${it.material ? `<p class="text-xs text-slate-500">Materiale: <span class="text-slate-700">${it.material}</span></p>` : ''}
                 
                 <div class="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2">
-                  <span class="text-base font-extrabold text-slate-900">€${it.price.toFixed(2)}</span>
+                  <span class="text-base font-extrabold text-slate-900">€${Number(it.price).toFixed(2)}</span>
                   <div class="flex items-center gap-1.5">
                     <button onclick="copyVinted(${it.id})" title="Copia descrizione" class="px-2 py-1 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition flex items-center gap-1">
                       <i class="fa-regular fa-copy"></i> Copia Vinted
@@ -449,7 +462,6 @@
       };
     }
 
-    // --- GESTIONE MODALE ---
     function openModal() {
       document.getElementById("itemForm").reset();
       document.getElementById("itemId").value = "";
@@ -463,7 +475,6 @@
       document.getElementById("itemModal").classList.add("hidden");
     }
 
-    // --- NOTIFICA TOAST ---
     function showToast(msg) {
       const toast = document.getElementById("toast");
       document.getElementById("toastMsg").innerText = msg;
@@ -471,8 +482,8 @@
       setTimeout(() => toast.classList.add("opacity-0"), 2500);
     }
 
-    // --- BACKUP E RIPRISTINO JSON ---
-    function exportBackup() {
+    async function exportBackup() {
+      const db = await getDB();
       const tx = db.transaction("items", "readonly");
       const req = tx.objectStore("items").getAll();
       req.onsuccess = () => {
@@ -484,14 +495,15 @@
       };
     }
 
-    function importBackup(e) {
+    async function importBackup(e) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         try {
           const items = JSON.parse(event.target.result);
           if (Array.isArray(items)) {
+            const db = await getDB();
             const tx = db.transaction("items", "readwrite");
             const store = tx.objectStore("items");
             items.forEach(it => {
