@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vinted Manager & Guardaroba</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .badge-draft { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-ready { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
+    .badge-published { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .badge-sold { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-shirt text-teal-600 text-2xl"></i>
+        <h1 class="text-xl font-bold tracking-tight text-slate-900">Vinted Inventory</h1>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="exportData()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5">
+          <i class="fa-solid fa-download"></i> Backup JSON
+        </button>
+        <label class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium cursor-pointer transition flex items-center gap-1.5">
+          <i class="fa-solid fa-upload"></i> Ripristina
+          <input type="file" id="importInput" accept=".json" class="hidden" onchange="importData(event)">
+        </label>
+        <button onclick="openModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-plus"></i> Aggiungi Capo
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Statistiche rapide -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-medium text-slate-500 uppercase">Da fotografare</p>
+        <p id="count-draft" class="text-2xl font-bold text-amber-600 mt-1">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-medium text-slate-500 uppercase">Pronti da caricare</p>
+        <p id="count-ready" class="text-2xl font-bold text-orange-600 mt-1">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-medium text-slate-500 uppercase">Online su Vinted</p>
+        <p id="count-published" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+      </div>
+      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <p class="text-xs font-medium text-slate-500 uppercase">Venduti</p>
+        <p id="count-sold" class="text-2xl font-bold text-slate-700 mt-1">0</p>
+      </div>
+    </div>
+
+    <!-- Barra Ricerca e Filtri -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-wrap gap-3 items-center justify-between">
+      <div class="flex-1 min-w-[240px]">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
+          <input type="text" id="searchInput" placeholder="Cerca per titolo, brand o taglia..." oninput="renderItems()" 
+            class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <select id="filterStatus" onchange="renderItems()" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700">
+          <option value="ALL">Tutti gli stati</option>
+          <option value="draft">🟡 Da fotografare</option>
+          <option value="ready">🟠 Pronto da caricare</option>
+          <option value="published">🟢 Online</option>
+          <option value="sold">⚪ Venduto</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Grid Capi -->
+    <div id="itemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <!-- Capi generati dinamicamente -->
+    </div>
+    
+    <div id="emptyState" class="hidden text-center py-16">
+      <i class="fa-solid fa-box-open text-4xl text-slate-300 mb-3"></i>
+      <p class="text-slate-500">Nessun capo trovato. Clicca su "Aggiungi Capo" per iniziare!</p>
+    </div>
+  </main>
+
+  <!-- Modal Inserimento/Modifica -->
+  <div id="itemModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
+      <div class="p-5 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white">
+        <h3 id="modalTitle" class="text-lg font-bold text-slate-800">Nuovo Capo</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      
+      <form id="itemForm" onsubmit="saveItem(event)" class="p-5 space-y-4">
+        <input type="hidden" id="itemId">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Titolo Capo *</label>
+          <input type="text" id="title" required placeholder="Es. Maglione a trecce panna" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Brand</label>
+            <input type="text" id="brand" placeholder="Es. Zara, Levi's..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Taglia</label>
+            <input type="text" id="size" placeholder="Es. M, W28, 42..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Prezzo (€)</label>
+            <input type="number" step="0.5" id="price" placeholder="15" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Stato</label>
+            <select id="status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white">
+              <option value="draft">🟡 Da fotografare</option>
+              <option value="ready">🟠 Pronto da caricare</option>
+              <option value="published">🟢 Online su Vinted</option>
+              <option value="sold">⚪ Venduto</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sezione Misure -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+          <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Misure Rapide (in cm)</p>
+          <div class="grid grid-cols-2 gap-2 text-sm">
+            <input type="text" id="measureSpalle" placeholder="Spalle: 42 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
+            <input type="text" id="measurePetto" placeholder="Ascella-ascella: 50 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
+            <input type="text" id="measureVita" placeholder="Vita: 36 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
+            <input type="text" id="measureLunghezza" placeholder="Lunghezza: 65 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Note / Condizioni / Difetti</label>
+          <textarea id="notes" rows="2" placeholder="Es. Ottime condizioni, piccolo filo tirato sul polso..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+        </div>
+
+        <!-- Gestione Foto (IndexedDB) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Foto del capo</label>
+          <input type="file" id="photosInput" accept="image/*" multiple onchange="handleImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+          <div id="photosPreview" class="flex flex-wrap gap-2 mt-2"></div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">Annulla</button>
+          <button type="submit" class="px-5 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition">Salva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Inizializzazione IndexedDB
+    let db;
+    let tempImages = [];
+
+    const request = indexedDB.open("VintedManagerDB", 1);
+    request.onupgradeneeded = (e) => {
+      db = e.target.result;
+      if (!db.objectStoreNames.contains("items")) {
+        db.createObjectStore("items", { keyPath: "id" });
+      }
+    };
+    request.onsuccess = (e) => {
+      db = e.target.result;
+      renderItems();
+    };
+
+    function getAllItems() {
+      return new Promise((resolve) => {
+        const tx = db.transaction("items", "readonly");
+        const store = tx.objectStore("items");
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+      });
+    }
+
+    async function renderItems() {
+      const items = await getAllItems();
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const statusFilter = document.getElementById("filterStatus").value;
+
+      // Aggiorna contatori
+      let cDraft = 0, cReady = 0, cPub = 0, cSold = 0;
+      items.forEach(it => {
+        if (it.status === 'draft') cDraft++;
+        if (it.status === 'ready') cReady++;
+        if (it.status === 'published') cPub++;
+        if (it.status === 'sold') cSold++;
+      });
+      document.getElementById("count-draft").textContent = cDraft;
+      document.getElementById("count-ready").textContent = cReady;
+      document.getElementById("count-published").textContent = cPub;
+      document.getElementById("count-sold").textContent = cSold;
+
+      const filtered = items.filter(it => {
+        const matchSearch = (it.title || "").toLowerCase().includes(search) ||
+                            (it.brand || "").toLowerCase().includes(search) ||
+                            (it.size || "").toLowerCase().includes(search);
+        const matchStatus = statusFilter === "ALL" || it.status === statusFilter;
+        return matchSearch && matchStatus;
+      });
+
+      const grid = document.getElementById("itemsGrid");
+      const empty = document.getElementById("emptyState");
+      grid.innerHTML = "";
+
+      if (filtered.length === 0) {
+        empty.classList.remove("hidden");
+        return;
+      }
+      empty.classList.add("hidden");
+
+      filtered.forEach(it => {
+        const cover = it.photos && it.photos.length > 0 ? it.photos[0] : null;
+        const statusBadges = {
+          draft: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-draft">🟡 Da fotografare</span>',
+          ready: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-ready">🟠 Pronto</span>',
+          published: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-published">🟢 Online</span>',
+          sold: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-sold">⚪ Venduto</span>'
+        };
+
+        const card = document.createElement("div");
+        card.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col";
+        card.innerHTML = `
+          <div class="h-44 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+            ${cover ? `<img src="${cover}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-300 text-3xl"></i>`}
+            <div class="absolute top-2 right-2">${statusBadges[it.status] || ''}</div>
+            ${it.photos && it.photos.length > 1 ? `<span class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">${it.photos.length} foto</span>` : ''}
+          </div>
+          <div class="p-4 flex-1 flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start gap-1">
+                <h4 class="font-bold text-slate-800 text-sm line-clamp-1">${escapeHtml(it.title)}</h4>
+                <span class="text-sm font-bold text-teal-600">${it.price ? it.price + '€' : '-'}</span>
+              </div>
+              <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(it.brand || 'No Brand')} • Tg. ${escapeHtml(it.size || '-')}</p>
+              
+              <!-- Tag misure se presenti -->
+              <div class="mt-2.5 flex flex-wrap gap-1">
+                ${it.measureSpalle ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Spalle: ${escapeHtml(it.measureSpalle)}</span>` : ''}
+                ${it.measurePetto ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Petto: ${escapeHtml(it.measurePetto)}</span>` : ''}
+                ${it.measureVita ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Vita: ${escapeHtml(it.measureVita)}</span>` : ''}
+                ${it.measureLunghezza ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Lungh: ${escapeHtml(it.measureLunghezza)}</span>` : ''}
+              </div>
+            </div>
+
+            <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <button onclick="copyDescription('${it.id}')" title="Copia descrizione formattata per Vinted" class="text-teal-700 hover:text-teal-800 font-semibold flex items-center gap-1">
+                <i class="fa-regular fa-copy"></i> Copia Vinted
+              </button>
+              <div class="flex gap-2 text-slate-400">
+                <button onclick="editItem('${it.id}')" class="hover:text-slate-700"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteItem('${it.id}')" class="hover:text-red-600"><i class="fa-regular fa-trash-can"></i></button>
+              </div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function openModal(editData = null) {
+      tempImages = [];
+      const form = document.getElementById("itemForm");
+      form.reset();
+      document.getElementById("photosPreview").innerHTML = "";
+
+      if (editData) {
+        document.getElementById("modalTitle").textContent = "Modifica Capo";
+        document.getElementById("itemId").value = editData.id;
+        document.getElementById("title").value = editData.title || "";
+        document.getElementById("brand").value = editData.brand || "";
+        document.getElementById("size").value = editData.size || "";
+        document.getElementById("price").value = editData.price || "";
+        document.getElementById("status").value = editData.status || "draft";
+        document.getElementById("measureSpalle").value = editData.measureSpalle || "";
+        document.getElementById("measurePetto").value = editData.measurePetto || "";
+        document.getElementById("measureVita").value = editData.measureVita || "";
+        document.getElementById("measureLunghezza").value = editData.measureLunghezza || "";
+        document.getElementById("notes").value = editData.notes || "";
+        tempImages = [...(editData.photos || [])];
+        renderImagePreviews();
+      } else {
+        document.getElementById("modalTitle").textContent = "Nuovo Capo";
+        document.getElementById("itemId").value = Date.now().toString();
+      }
+      document.getElementById("itemModal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("itemModal").classList.add("hidden");
+    }
+
+    function handleImageUpload(e) {
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          tempImages.push(event.target.result);
+          renderImagePreviews();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function renderImagePreviews() {
+      const preview = document.getElementById("photosPreview");
+      preview.innerHTML = "";
+      tempImages.forEach((img, idx) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200";
+        wrapper.innerHTML = `
+          <img src="${img}" class="w-full h-full object-cover">
+          <button type="button" onclick="removeImage(${idx})" class="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"><i class="fa-solid fa-xmark"></i></button>
+        `;
+        preview.appendChild(wrapper);
+      });
+    }
+
+    function removeImage(idx) {
+      tempImages.splice(idx, 1);
+      renderImagePreviews();
+    }
+
+    function saveItem(e) {
+      e.preventDefault();
+      const id = document.getElementById("itemId").value;
+      const item = {
+        id: id,
+        title: document.getElementById("title").value,
+        brand: document.getElementById("brand").value,
+        size: document.getElementById("size").value,
+        price: document.getElementById("price").value,
+        status: document.getElementById("status").value,
+        measureSpalle: document.getElementById("measureSpalle").value,
+        measurePetto: document.getElementById("measurePetto").value,
+        measureVita: document.getElementById("measureVita").value,
+        measureLunghezza: document.getElementById("measureLunghezza").value,
+        notes: document.getElementById("notes").value,
+        photos: tempImages,
+        updatedAt: new Date().toISOString()
+      };
+
+      const tx = db.transaction("items", "readwrite");
+      tx.objectStore("items").put(item);
+      tx.oncomplete = () => {
+        closeModal();
+        renderItems();
+      };
+    }
+
+    async function editItem(id) {
+      const tx = db.transaction("items", "readonly");
+      const req = tx.objectStore("items").get(id);
+      req.onsuccess = () => {
+        if (req.result) openModal(req.result);
+      };
+    }
+
+    function deleteItem(id) {
+      if (!confirm("Vuoi davvero eliminare questo articolo?")) return;
+      const tx = db.transaction("items", "readwrite");
+      tx.objectStore("items").delete(id);
+      tx.oncomplete = () => renderItems();
+    }
+
+    async function copyDescription(id) {
+      const tx = db.transaction("items", "readonly");
+      const req = tx.objectStore("items").get(id);
+      req.onsuccess = () => {
+        const it = req.result;
+        if (!it) return;
+
+        let txt = `${it.title}\n\n`;
+        if (it.brand) txt += `🏷️ Brand: ${it.brand}\n`;
+        if (it.size) txt += `📏 Taglia: ${it.size}\n\n`;
+
+        const measures = [];
+        if (it.measureSpalle) measures.push(`- Spalle: ${it.measureSpalle}`);
+        if (it.measurePetto) measures.push(`- Ascella/Ascella: ${it.measurePetto}`);
+        if (it.measureVita) measures.push(`- Vita: ${it.measureVita}`);
+        if (it.measureLunghezza) measures.push(`- Lunghezza totale: ${it.measureLunghezza}`);
+
+        if (measures.length > 0) {
+          txt += `📐 Misure prese in piano:\n${measures.join('\n')}\n\n`;
+        }
+
+        if (it.notes) {
+          txt += `ℹ️ Dettagli/Condizioni:\n${it.notes}\n\n`;
+        }
+        txt += `📦 Spedizione rapida e accurata!`;
+
+        navigator.clipboard.writeText(txt).then(() => {
+          alert("Descrizione copiata negli appunti! Pronta per Vinted.");
+        });
+      };
+    }
+
+    async function exportData() {
+      const items = await getAllItems();
+      const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-vinted-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+    }
+
+    function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const items = JSON.parse(evt.target.result);
+          if (Array.isArray(items)) {
+            const tx = db.transaction("items", "readwrite");
+            const store = tx.objectStore("items");
+            items.forEach(it => store.put(it));
+            tx.oncomplete = () => {
+              alert("Dati ripristinati con successo!");
+              renderItems();
+            };
+          }
+        } catch (err) {
+          alert("File JSON non valido.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
+    }
+  </script>
+</body>
+</html>
