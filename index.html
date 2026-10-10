@@ -1,178 +1,230 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vinted Manager & Guardaroba</title>
+  <!-- Tailwind CSS per stile moderno e responsive su mobile -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    .badge-draft { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-    .badge-ready { background-color: #ffedd5; color: #9a3412; border: 1px solid #fed7aa; }
-    .badge-published { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-    .badge-sold { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen">
+<body class="bg-slate-50 text-slate-800 min-h-screen pb-12">
 
   <!-- Header -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <i class="fa-solid fa-shirt text-teal-600 text-2xl"></i>
-        <h1 class="text-xl font-bold tracking-tight text-slate-900">Vinted Inventory</h1>
+        <div class="w-9 h-9 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-lg shadow">
+          <i class="fa-solid fa-shirt"></i>
+        </div>
+        <h1 class="text-lg font-bold text-slate-900 tracking-tight">Vinted Inventory</h1>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="exportData()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5">
-          <i class="fa-solid fa-download"></i> Backup JSON
+        <button onclick="exportBackup()" title="Scarica Backup" class="px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5">
+          <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Backup</span>
         </button>
-        <label class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium cursor-pointer transition flex items-center gap-1.5">
-          <i class="fa-solid fa-upload"></i> Ripristina
-          <input type="file" id="importInput" accept=".json" class="hidden" onchange="importData(event)">
+        <label title="Ripristina Backup" class="cursor-pointer px-2.5 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition flex items-center gap-1.5">
+          <i class="fa-solid fa-upload"></i> <span class="hidden sm:inline">Ripristina</span>
+          <input type="file" id="importInput" accept=".json" class="hidden" onchange="importBackup(event)" />
         </label>
-        <button onclick="openModal()" class="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-sm">
-          <i class="fa-solid fa-plus"></i> Aggiungi Capo
+        <button onclick="openModal()" class="px-3 py-1.5 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow transition flex items-center gap-1.5">
+          <i class="fa-solid fa-plus"></i> Nuovo Capo
         </button>
       </div>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 py-6">
-    <!-- Statistiche rapide -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-medium text-slate-500 uppercase">Da fotografare</p>
-        <p id="count-draft" class="text-2xl font-bold text-amber-600 mt-1">0</p>
+  <!-- Main Container -->
+  <main class="max-w-4xl mx-auto px-4 py-6">
+
+    <!-- Statistiche Capi -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Da Fotografare</span>
+        <p id="countDraft" class="text-2xl font-extrabold text-amber-500 mt-0.5">0</p>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-medium text-slate-500 uppercase">Pronti da caricare</p>
-        <p id="count-ready" class="text-2xl font-bold text-orange-600 mt-1">0</p>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Pronti</span>
+        <p id="countReady" class="text-2xl font-extrabold text-blue-500 mt-0.5">0</p>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-medium text-slate-500 uppercase">Online su Vinted</p>
-        <p id="count-published" class="text-2xl font-bold text-emerald-600 mt-1">0</p>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Online</span>
+        <p id="countOnline" class="text-2xl font-extrabold text-teal-600 mt-0.5">0</p>
       </div>
-      <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-        <p class="text-xs font-medium text-slate-500 uppercase">Venduti</p>
-        <p id="count-sold" class="text-2xl font-bold text-slate-700 mt-1">0</p>
+      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
+        <span class="text-xs font-medium text-slate-500 uppercase tracking-wider">Venduti</span>
+        <p id="countSold" class="text-2xl font-extrabold text-emerald-600 mt-0.5">0</p>
       </div>
     </div>
 
-    <!-- Barra Ricerca e Filtri -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-wrap gap-3 items-center justify-between">
-      <div class="flex-1 min-w-[240px]">
-        <div class="relative">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-sm"></i>
-          <input type="text" id="searchInput" placeholder="Cerca per titolo, brand o taglia..." oninput="renderItems()" 
-            class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
-        </div>
+    <!-- Ricerca e Filtri -->
+    <div class="flex flex-col sm:flex-row gap-2 mb-6">
+      <div class="relative flex-1">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input type="text" id="searchInput" oninput="renderItems()" placeholder="Cerca per marca, categoria, colore, taglia..." class="w-full pl-9 pr-4 py-2 text-sm bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500" />
       </div>
-      <div class="flex items-center gap-2">
-        <select id="filterStatus" onchange="renderItems()" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700">
-          <option value="ALL">Tutti gli stati</option>
-          <option value="draft">🟡 Da fotografare</option>
-          <option value="ready">🟠 Pronto da caricare</option>
-          <option value="published">🟢 Online</option>
-          <option value="sold">⚪ Venduto</option>
-        </select>
-      </div>
+      <select id="statusFilter" onchange="renderItems()" class="px-3 py-2 text-sm bg-white rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 text-slate-700">
+        <option value="ALL">Tutti gli stati</option>
+        <option value="DRAFT">🟡 Da fotografare</option>
+        <option value="READY">🔵 Pronto da caricare</option>
+        <option value="ONLINE">🟢 Online su Vinted</option>
+        <option value="SOLD">⚪ Venduto</option>
+      </select>
     </div>
 
-    <!-- Grid Capi -->
-    <div id="itemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-      <!-- Capi generati dinamicamente -->
+    <!-- Lista Capi -->
+    <div id="itemsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Capi iniettati via JS -->
     </div>
     
-    <div id="emptyState" class="hidden text-center py-16">
-      <i class="fa-solid fa-box-open text-4xl text-slate-300 mb-3"></i>
-      <p class="text-slate-500">Nessun capo trovato. Clicca su "Aggiungi Capo" per iniziare!</p>
+    <div id="emptyState" class="hidden text-center py-12 text-slate-400">
+      <i class="fa-solid fa-box-open text-4xl mb-3"></i>
+      <p class="text-sm">Nessun capo trovato. Tocca <strong>+ Nuovo Capo</strong> per aggiungerne uno!</p>
     </div>
+
   </main>
 
-  <!-- Modal Inserimento/Modifica -->
-  <div id="itemModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl">
-      <div class="p-5 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white">
-        <h3 id="modalTitle" class="text-lg font-bold text-slate-800">Nuovo Capo</h3>
-        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
+  <!-- Modal Inserimento/Modifica Capo -->
+  <div id="itemModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in">
       
-      <form id="itemForm" onsubmit="saveItem(event)" class="p-5 space-y-4">
-        <input type="hidden" id="itemId">
+      <!-- Modal Header -->
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+        <h3 id="modalTitle" class="font-bold text-base text-slate-900">Nuovo Capo</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
 
+      <!-- Modal Body (Scorrevole) -->
+      <form id="itemForm" onsubmit="saveItem(event)" class="p-5 overflow-y-auto space-y-4 flex-1">
+        <input type="hidden" id="itemId" />
+
+        <!-- Foto di Copertina (anteprima) -->
         <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Titolo Capo *</label>
-          <input type="text" id="title" required placeholder="Es. Maglione a trecce panna" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Brand</label>
-            <input type="text" id="brand" placeholder="Es. Zara, Levi's..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Taglia</label>
-            <input type="text" id="size" placeholder="Es. M, W28, 42..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1.5">Foto di Riferimento (opzionale)</label>
+          <div class="flex items-center gap-3">
+            <div id="photoPreviewBox" class="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden bg-slate-50 text-slate-300">
+              <i class="fa-solid fa-camera text-xl"></i>
+            </div>
+            <div class="flex-1">
+              <input type="file" id="itemPhoto" accept="image/*" class="text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100" onchange="previewImage(event)" />
+              <p class="text-[11px] text-slate-400 mt-1">Carica una foto per riconoscere il capo al volo.</p>
+            </div>
           </div>
         </div>
 
+        <!-- Categoria e Marca -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Prezzo (€)</label>
-            <input type="number" step="0.5" id="price" placeholder="15" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none">
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Categoria *</label>
+            <select id="itemCategory" required class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="">Seleziona...</option>
+              <option value="Top & T-shirt">Top & T-shirt</option>
+              <option value="Camicie & Bluse">Camicie & Bluse</option>
+              <option value="Maglioni & Felpe">Maglioni & Felpe</option>
+              <option value="Giacche & Cappotti">Giacche & Cappotti</option>
+              <option value="Pantaloni & Jeans">Pantaloni & Jeans</option>
+              <option value="Gonne & Abiti">Gonne & Abiti</option>
+              <option value="Scarpe">Scarpe</option>
+              <option value="Borse & Accessori">Borse & Accessori</option>
+              <option value="Altro">Altro</option>
+            </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Stato</label>
-            <select id="status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white">
-              <option value="draft">🟡 Da fotografare</option>
-              <option value="ready">🟠 Pronto da caricare</option>
-              <option value="published">🟢 Online su Vinted</option>
-              <option value="sold">⚪ Venduto</option>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Marca *</label>
+            <input type="text" id="itemBrand" required placeholder="es. Zara, Vintage..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+        </div>
+
+        <!-- Taglia e Colore -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Taglia *</label>
+            <input type="text" id="itemSize" required placeholder="es. S, M, 42, 38..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Colore *</label>
+            <input type="text" id="itemColor" required placeholder="es. Nero, Panna..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+        </div>
+
+        <!-- Condizione e Materiale -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Condizione *</label>
+            <select id="itemCondition" required class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="Nuovo con cartellino">Nuovo con cartellino</option>
+              <option value="Nuovo senza cartellino">Nuovo senza cartellino</option>
+              <option value="Ottime condizioni" selected>Ottime condizioni</option>
+              <option value="Buone condizioni">Buone condizioni</option>
+              <option value="Discreto">Discreto</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Materiale</label>
+            <input type="text" id="itemMaterial" placeholder="es. 100% Cotone, Seta..." class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+        </div>
+
+        <!-- Prezzo e Stato -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Prezzo (€) *</label>
+            <input type="number" step="0.5" id="itemPrice" required placeholder="es. 15" class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Stato</label>
+            <select id="itemStatus" class="w-full text-sm rounded-lg border border-slate-200 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="DRAFT">🟡 Da fotografare</option>
+              <option value="READY">🔵 Pronto da caricare</option>
+              <option value="ONLINE">🟢 Online su Vinted</option>
+              <option value="SOLD">⚪ Venduto</option>
             </select>
           </div>
         </div>
 
-        <!-- Sezione Misure -->
-        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-          <p class="text-xs font-bold text-slate-600 uppercase tracking-wide">Misure Rapide (in cm)</p>
-          <div class="grid grid-cols-2 gap-2 text-sm">
-            <input type="text" id="measureSpalle" placeholder="Spalle: 42 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
-            <input type="text" id="measurePetto" placeholder="Ascella-ascella: 50 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
-            <input type="text" id="measureVita" placeholder="Vita: 36 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
-            <input type="text" id="measureLunghezza" placeholder="Lunghezza: 65 cm" class="px-2.5 py-1.5 bg-white border border-slate-200 rounded-md text-xs">
+        <!-- Misure opzionali -->
+        <div class="border-t border-slate-100 pt-3">
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1.5">Misure in cm (opzionali)</label>
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <input type="number" id="mSpalle" placeholder="Spalle" class="w-full text-xs rounded-lg border border-slate-200 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500" />
+            <input type="number" id="mPetto" placeholder="Petto" class="w-full text-xs rounded-lg border border-slate-200 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500" />
+            <input type="number" id="mVita" placeholder="Vita" class="w-full text-xs rounded-lg border border-slate-200 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500" />
+            <input type="number" id="mLunghezza" placeholder="Lungh." class="w-full text-xs rounded-lg border border-slate-200 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-teal-500" />
           </div>
         </div>
 
+        <!-- Descrizione -->
         <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Note / Condizioni / Difetti</label>
-          <textarea id="notes" rows="2" placeholder="Es. Ottime condizioni, piccolo filo tirato sul polso..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"></textarea>
+          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Descrizione / Dettagli</label>
+          <textarea id="itemDesc" rows="3" placeholder="Note su vestibilità, difetti, dettagli particolari..." class="w-full text-sm rounded-lg border border-slate-200 p-2.5 focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
         </div>
 
-        <!-- Gestione Foto (IndexedDB) -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Foto del capo</label>
-          <input type="file" id="photosInput" accept="image/*" multiple onchange="handleImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
-          <div id="photosPreview" class="flex flex-wrap gap-2 mt-2"></div>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50">Annulla</button>
-          <button type="submit" class="px-5 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition">Salva</button>
+        <!-- Modal Footer -->
+        <div class="pt-3 border-t border-slate-100 flex gap-2">
+          <button type="button" onclick="closeModal()" class="flex-1 py-2 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition">Annulla</button>
+          <button type="submit" class="flex-1 py-2 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow transition">Salva Capo</button>
         </div>
       </form>
     </div>
   </div>
 
-  <script>
-    // Inizializzazione IndexedDB
-    let db;
-    let tempImages = [];
+  <!-- Toast Notifica Copiato -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50 flex items-center gap-2">
+    <i class="fa-solid fa-check text-emerald-400"></i> <span id="toastMsg">Testo Vinted copiato negli appunti!</span>
+  </div>
 
-    const request = indexedDB.open("VintedManagerDB", 1);
+  <script>
+    // --- DATABASE INDEXEDDB ---
+    let db;
+    let currentPhotoBase64 = null;
+
+    const request = indexedDB.open("VintedManagerDB", 2);
     request.onupgradeneeded = (e) => {
       db = e.target.result;
       if (!db.objectStoreNames.contains("items")) {
-        db.createObjectStore("items", { keyPath: "id" });
+        db.createObjectStore("items", { keyPath: "id", autoIncrement: true });
       }
     };
     request.onsuccess = (e) => {
@@ -180,125 +232,230 @@
       renderItems();
     };
 
-    function getAllItems() {
-      return new Promise((resolve) => {
-        const tx = db.transaction("items", "readonly");
-        const store = tx.objectStore("items");
-        const req = store.getAll();
-        req.onsuccess = () => resolve(req.result || []);
-      });
+    // --- ANTEPRIMA IMMAGINE ---
+    function previewImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentPhotoBase64 = e.target.result;
+        document.getElementById("photoPreviewBox").innerHTML = `<img src="${currentPhotoBase64}" class="w-full h-full object-cover" />`;
+      };
+      reader.readAsDataURL(file);
     }
 
-    async function renderItems() {
-      const items = await getAllItems();
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      const statusFilter = document.getElementById("filterStatus").value;
+    // --- SALVATAGGIO / AGGIORNAMENTO ---
+    function saveItem(e) {
+      e.preventDefault();
+      const id = document.getElementById("itemId").value;
+      const itemData = {
+        category: document.getElementById("itemCategory").value,
+        brand: document.getElementById("itemBrand").value,
+        size: document.getElementById("itemSize").value,
+        color: document.getElementById("itemColor").value,
+        condition: document.getElementById("itemCondition").value,
+        material: document.getElementById("itemMaterial").value,
+        price: parseFloat(document.getElementById("itemPrice").value) || 0,
+        status: document.getElementById("itemStatus").value,
+        description: document.getElementById("itemDesc").value,
+        spalle: document.getElementById("mSpalle").value,
+        petto: document.getElementById("mPetto").value,
+        vita: document.getElementById("mVita").value,
+        lunghezza: document.getElementById("mLunghezza").value,
+        photo: currentPhotoBase64,
+        updatedAt: new Date().toISOString()
+      };
 
-      // Aggiorna contatori
-      let cDraft = 0, cReady = 0, cPub = 0, cSold = 0;
-      items.forEach(it => {
-        if (it.status === 'draft') cDraft++;
-        if (it.status === 'ready') cReady++;
-        if (it.status === 'published') cPub++;
-        if (it.status === 'sold') cSold++;
-      });
-      document.getElementById("count-draft").textContent = cDraft;
-      document.getElementById("count-ready").textContent = cReady;
-      document.getElementById("count-published").textContent = cPub;
-      document.getElementById("count-sold").textContent = cSold;
-
-      const filtered = items.filter(it => {
-        const matchSearch = (it.title || "").toLowerCase().includes(search) ||
-                            (it.brand || "").toLowerCase().includes(search) ||
-                            (it.size || "").toLowerCase().includes(search);
-        const matchStatus = statusFilter === "ALL" || it.status === statusFilter;
-        return matchSearch && matchStatus;
-      });
-
-      const grid = document.getElementById("itemsGrid");
-      const empty = document.getElementById("emptyState");
-      grid.innerHTML = "";
-
-      if (filtered.length === 0) {
-        empty.classList.remove("hidden");
-        return;
+      const tx = db.transaction("items", "readwrite");
+      const store = tx.objectStore("items");
+      if (id) {
+        itemData.id = parseInt(id);
+        store.put(itemData);
+      } else {
+        itemData.createdAt = new Date().toISOString();
+        store.add(itemData);
       }
-      empty.classList.add("hidden");
 
-      filtered.forEach(it => {
-        const cover = it.photos && it.photos.length > 0 ? it.photos[0] : null;
-        const statusBadges = {
-          draft: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-draft">🟡 Da fotografare</span>',
-          ready: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-ready">🟠 Pronto</span>',
-          published: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-published">🟢 Online</span>',
-          sold: '<span class="px-2 py-0.5 rounded text-xs font-semibold badge-sold">⚪ Venduto</span>'
+      tx.oncomplete = () => {
+        closeModal();
+        renderItems();
+        showToast("Capo salvato con successo!");
+      };
+    }
+
+    // --- ELIMINAZIONE CAPO ---
+    function deleteItem(id) {
+      if (confirm("Vuoi davvero eliminare questo capo?")) {
+        const tx = db.transaction("items", "readwrite");
+        tx.objectStore("items").delete(id);
+        tx.oncomplete = () => {
+          renderItems();
+          showToast("Capo eliminato!");
+        };
+      }
+    }
+
+    // --- MODIFICA CAPO ---
+    function editItem(id) {
+      const tx = db.transaction("items", "readonly");
+      const req = tx.objectStore("items").get(id);
+      req.onsuccess = () => {
+        const item = req.result;
+        if (!item) return;
+        document.getElementById("itemId").value = item.id;
+        document.getElementById("itemCategory").value = item.category || "";
+        document.getElementById("itemBrand").value = item.brand || "";
+        document.getElementById("itemSize").value = item.size || "";
+        document.getElementById("itemColor").value = item.color || "";
+        document.getElementById("itemCondition").value = item.condition || "Ottime condizioni";
+        document.getElementById("itemMaterial").value = item.material || "";
+        document.getElementById("itemPrice").value = item.price || "";
+        document.getElementById("itemStatus").value = item.status || "DRAFT";
+        document.getElementById("itemDesc").value = item.description || "";
+        document.getElementById("mSpalle").value = item.spalle || "";
+        document.getElementById("mPetto").value = item.petto || "";
+        document.getElementById("mVita").value = item.vita || "";
+        document.getElementById("mLunghezza").value = item.lunghezza || "";
+
+        currentPhotoBase64 = item.photo || null;
+        if (currentPhotoBase64) {
+          document.getElementById("photoPreviewBox").innerHTML = `<img src="${currentPhotoBase64}" class="w-full h-full object-cover" />`;
+        } else {
+          document.getElementById("photoPreviewBox").innerHTML = `<i class="fa-solid fa-camera text-xl"></i>`;
+        }
+        document.getElementById("modalTitle").innerText = "Modifica Capo";
+        document.getElementById("itemModal").classList.remove("hidden");
+      };
+    }
+
+    // --- COPIA DESCRIZIONE PER VINTED ---
+    function copyVinted(id) {
+      const tx = db.transaction("items", "readonly");
+      const req = tx.objectStore("items").get(id);
+      req.onsuccess = () => {
+        const it = req.result;
+        let text = `${it.category} - ${it.brand}\n`;
+        text += `• Taglia: ${it.size}\n`;
+        text += `• Colore: ${it.color}\n`;
+        text += `• Condizione: ${it.condition}\n`;
+        if (it.material) text += `• Materiale: ${it.material}\n`;
+
+        const hasMeasures = it.spalle || it.petto || it.vita || it.lunghezza;
+        if (hasMeasures) {
+          text += `\n📐 Misure in piano:\n`;
+          if (it.spalle) text += `- Spalle: ${it.spalle} cm\n`;
+          if (it.petto) text += `- Ascella-ascella (petto): ${it.petto} cm\n`;
+          if (it.vita) text += `- Vita: ${it.vita} cm\n`;
+          if (it.lunghezza) text += `- Lunghezza: ${it.lunghezza} cm\n`;
+        }
+
+        if (it.description) {
+          text += `\n${it.description}\n`;
+        }
+        text += `\n📦 Spedizione rapida e accurata!`;
+
+        navigator.clipboard.writeText(text).then(() => {
+          showToast("Descrizione copiata! Pronta per Vinted.");
+        });
+      };
+    }
+
+    // --- RENDERING LISTA E CONTEGGI ---
+    function renderItems() {
+      if (!db) return;
+      const tx = db.transaction("items", "readonly");
+      const req = tx.objectStore("items").getAll();
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const statusFilter = document.getElementById("statusFilter").value;
+
+      req.onsuccess = () => {
+        const items = req.result || [];
+        
+        // Calcolo contatori
+        let cDraft = 0, cReady = 0, cOnline = 0, cSold = 0;
+        items.forEach(it => {
+          if (it.status === "DRAFT") cDraft++;
+          else if (it.status === "READY") cReady++;
+          else if (it.status === "ONLINE") cOnline++;
+          else if (it.status === "SOLD") cSold++;
+        });
+        document.getElementById("countDraft").innerText = cDraft;
+        document.getElementById("countReady").innerText = cReady;
+        document.getElementById("countOnline").innerText = cOnline;
+        document.getElementById("countSold").innerText = cSold;
+
+        // Filtro
+        const filtered = items.filter(it => {
+          const matchStatus = (statusFilter === "ALL") || (it.status === statusFilter);
+          const fullText = `${it.brand} ${it.category} ${it.size} ${it.color} ${it.material} ${it.description}`.toLowerCase();
+          const matchSearch = fullText.includes(search);
+          return matchStatus && matchSearch;
+        });
+
+        const container = document.getElementById("itemsContainer");
+        const empty = document.getElementById("emptyState");
+
+        if (filtered.length === 0) {
+          container.innerHTML = "";
+          empty.classList.remove("hidden");
+          return;
+        }
+        empty.classList.add("hidden");
+
+        const statusMap = {
+          DRAFT: { label: "🟡 Da fotografare", bg: "bg-amber-50 text-amber-700 border-amber-200" },
+          READY: { label: "🔵 Pronto", bg: "bg-blue-50 text-blue-700 border-blue-200" },
+          ONLINE: { label: "🟢 Online", bg: "bg-teal-50 text-teal-700 border-teal-200" },
+          SOLD: { label: "⚪ Venduto", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" }
         };
 
-        const card = document.createElement("div");
-        card.className = "bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col";
-        card.innerHTML = `
-          <div class="h-44 bg-slate-100 relative overflow-hidden flex items-center justify-center">
-            ${cover ? `<img src="${cover}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-image text-slate-300 text-3xl"></i>`}
-            <div class="absolute top-2 right-2">${statusBadges[it.status] || ''}</div>
-            ${it.photos && it.photos.length > 1 ? `<span class="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-1.5 py-0.5 rounded">${it.photos.length} foto</span>` : ''}
-          </div>
-          <div class="p-4 flex-1 flex flex-col justify-between">
-            <div>
-              <div class="flex justify-between items-start gap-1">
-                <h4 class="font-bold text-slate-800 text-sm line-clamp-1">${escapeHtml(it.title)}</h4>
-                <span class="text-sm font-bold text-teal-600">${it.price ? it.price + '€' : '-'}</span>
-              </div>
-              <p class="text-xs text-slate-500 mt-0.5">${escapeHtml(it.brand || 'No Brand')} • Tg. ${escapeHtml(it.size || '-')}</p>
-              
-              <!-- Tag misure se presenti -->
-              <div class="mt-2.5 flex flex-wrap gap-1">
-                ${it.measureSpalle ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Spalle: ${escapeHtml(it.measureSpalle)}</span>` : ''}
-                ${it.measurePetto ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Petto: ${escapeHtml(it.measurePetto)}</span>` : ''}
-                ${it.measureVita ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Vita: ${escapeHtml(it.measureVita)}</span>` : ''}
-                ${it.measureLunghezza ? `<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Lungh: ${escapeHtml(it.measureLunghezza)}</span>` : ''}
-              </div>
-            </div>
+        container.innerHTML = filtered.map(it => {
+          const st = statusMap[it.status] || statusMap.DRAFT;
+          const photoHtml = it.photo 
+            ? `<img src="${it.photo}" class="w-24 h-28 object-cover rounded-xl" />` 
+            : `<div class="w-24 h-28 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-300"><i class="fa-solid fa-shirt text-2xl"></i></div>`;
 
-            <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <button onclick="copyDescription('${it.id}')" title="Copia descrizione formattata per Vinted" class="text-teal-700 hover:text-teal-800 font-semibold flex items-center gap-1">
-                <i class="fa-regular fa-copy"></i> Copia Vinted
-              </button>
-              <div class="flex gap-2 text-slate-400">
-                <button onclick="editItem('${it.id}')" class="hover:text-slate-700"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteItem('${it.id}')" class="hover:text-red-600"><i class="fa-regular fa-trash-can"></i></button>
+          return `
+            <div class="bg-white rounded-2xl border border-slate-200 p-3.5 shadow-sm hover:shadow transition flex gap-3.5 items-start">
+              ${photoHtml}
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-1 mb-1">
+                  <span class="text-xs font-bold text-teal-600 truncate">${it.brand}</span>
+                  <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full border ${st.bg}">${st.label}</span>
+                </div>
+                <h4 class="font-bold text-sm text-slate-900 truncate">${it.category}</h4>
+                <p class="text-xs text-slate-500 mt-0.5">Taglia: <strong class="text-slate-700">${it.size}</strong> • Colore: <strong class="text-slate-700">${it.color}</strong></p>
+                <p class="text-xs text-slate-500">Condizione: <span class="text-slate-700">${it.condition}</span></p>
+                ${it.material ? `<p class="text-xs text-slate-500">Materiale: <span class="text-slate-700">${it.material}</span></p>` : ''}
+                
+                <div class="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2">
+                  <span class="text-base font-extrabold text-slate-900">€${it.price.toFixed(2)}</span>
+                  <div class="flex items-center gap-1.5">
+                    <button onclick="copyVinted(${it.id})" title="Copia descrizione" class="px-2 py-1 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-100 rounded-lg transition flex items-center gap-1">
+                      <i class="fa-regular fa-copy"></i> Copia Vinted
+                    </button>
+                    <button onclick="editItem(${it.id})" class="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg">
+                      <i class="fa-solid fa-pen text-xs"></i>
+                    </button>
+                    <button onclick="deleteItem(${it.id})" class="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg">
+                      <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
+          `;
+        }).join("");
+      };
     }
 
-    function openModal(editData = null) {
-      tempImages = [];
-      const form = document.getElementById("itemForm");
-      form.reset();
-      document.getElementById("photosPreview").innerHTML = "";
-
-      if (editData) {
-        document.getElementById("modalTitle").textContent = "Modifica Capo";
-        document.getElementById("itemId").value = editData.id;
-        document.getElementById("title").value = editData.title || "";
-        document.getElementById("brand").value = editData.brand || "";
-        document.getElementById("size").value = editData.size || "";
-        document.getElementById("price").value = editData.price || "";
-        document.getElementById("status").value = editData.status || "draft";
-        document.getElementById("measureSpalle").value = editData.measureSpalle || "";
-        document.getElementById("measurePetto").value = editData.measurePetto || "";
-        document.getElementById("measureVita").value = editData.measureVita || "";
-        document.getElementById("measureLunghezza").value = editData.measureLunghezza || "";
-        document.getElementById("notes").value = editData.notes || "";
-        tempImages = [...(editData.photos || [])];
-        renderImagePreviews();
-      } else {
-        document.getElementById("modalTitle").textContent = "Nuovo Capo";
-        document.getElementById("itemId").value = Date.now().toString();
-      }
+    // --- GESTIONE MODALE ---
+    function openModal() {
+      document.getElementById("itemForm").reset();
+      document.getElementById("itemId").value = "";
+      currentPhotoBase64 = null;
+      document.getElementById("photoPreviewBox").innerHTML = `<i class="fa-solid fa-camera text-xl"></i>`;
+      document.getElementById("modalTitle").innerText = "Nuovo Capo";
       document.getElementById("itemModal").classList.remove("hidden");
     }
 
@@ -306,135 +463,44 @@
       document.getElementById("itemModal").classList.add("hidden");
     }
 
-    function handleImageUpload(e) {
-      const files = Array.from(e.target.files);
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          tempImages.push(event.target.result);
-          renderImagePreviews();
-        };
-        reader.readAsDataURL(file);
-      });
+    // --- NOTIFICA TOAST ---
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toastMsg").innerText = msg;
+      toast.classList.remove("opacity-0");
+      setTimeout(() => toast.classList.add("opacity-0"), 2500);
     }
 
-    function renderImagePreviews() {
-      const preview = document.getElementById("photosPreview");
-      preview.innerHTML = "";
-      tempImages.forEach((img, idx) => {
-        const wrapper = document.createElement("div");
-        wrapper.className = "relative w-14 h-14 rounded-lg overflow-hidden border border-slate-200";
-        wrapper.innerHTML = `
-          <img src="${img}" class="w-full h-full object-cover">
-          <button type="button" onclick="removeImage(${idx})" class="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px]"><i class="fa-solid fa-xmark"></i></button>
-        `;
-        preview.appendChild(wrapper);
-      });
-    }
-
-    function removeImage(idx) {
-      tempImages.splice(idx, 1);
-      renderImagePreviews();
-    }
-
-    function saveItem(e) {
-      e.preventDefault();
-      const id = document.getElementById("itemId").value;
-      const item = {
-        id: id,
-        title: document.getElementById("title").value,
-        brand: document.getElementById("brand").value,
-        size: document.getElementById("size").value,
-        price: document.getElementById("price").value,
-        status: document.getElementById("status").value,
-        measureSpalle: document.getElementById("measureSpalle").value,
-        measurePetto: document.getElementById("measurePetto").value,
-        measureVita: document.getElementById("measureVita").value,
-        measureLunghezza: document.getElementById("measureLunghezza").value,
-        notes: document.getElementById("notes").value,
-        photos: tempImages,
-        updatedAt: new Date().toISOString()
-      };
-
-      const tx = db.transaction("items", "readwrite");
-      tx.objectStore("items").put(item);
-      tx.oncomplete = () => {
-        closeModal();
-        renderItems();
-      };
-    }
-
-    async function editItem(id) {
+    // --- BACKUP E RIPRISTINO JSON ---
+    function exportBackup() {
       const tx = db.transaction("items", "readonly");
-      const req = tx.objectStore("items").get(id);
+      const req = tx.objectStore("items").getAll();
       req.onsuccess = () => {
-        if (req.result) openModal(req.result);
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(req.result));
+        const a = document.createElement("a");
+        a.href = dataStr;
+        a.download = `vinted_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
       };
     }
 
-    function deleteItem(id) {
-      if (!confirm("Vuoi davvero eliminare questo articolo?")) return;
-      const tx = db.transaction("items", "readwrite");
-      tx.objectStore("items").delete(id);
-      tx.oncomplete = () => renderItems();
-    }
-
-    async function copyDescription(id) {
-      const tx = db.transaction("items", "readonly");
-      const req = tx.objectStore("items").get(id);
-      req.onsuccess = () => {
-        const it = req.result;
-        if (!it) return;
-
-        let txt = `${it.title}\n\n`;
-        if (it.brand) txt += `🏷️ Brand: ${it.brand}\n`;
-        if (it.size) txt += `📏 Taglia: ${it.size}\n\n`;
-
-        const measures = [];
-        if (it.measureSpalle) measures.push(`- Spalle: ${it.measureSpalle}`);
-        if (it.measurePetto) measures.push(`- Ascella/Ascella: ${it.measurePetto}`);
-        if (it.measureVita) measures.push(`- Vita: ${it.measureVita}`);
-        if (it.measureLunghezza) measures.push(`- Lunghezza totale: ${it.measureLunghezza}`);
-
-        if (measures.length > 0) {
-          txt += `📐 Misure prese in piano:\n${measures.join('\n')}\n\n`;
-        }
-
-        if (it.notes) {
-          txt += `ℹ️ Dettagli/Condizioni:\n${it.notes}\n\n`;
-        }
-        txt += `📦 Spedizione rapida e accurata!`;
-
-        navigator.clipboard.writeText(txt).then(() => {
-          alert("Descrizione copiata negli appunti! Pronta per Vinted.");
-        });
-      };
-    }
-
-    async function exportData() {
-      const items = await getAllItems();
-      const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `backup-vinted-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-    }
-
-    function importData(e) {
+    function importBackup(e) {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = async (evt) => {
+      reader.onload = (event) => {
         try {
-          const items = JSON.parse(evt.target.result);
+          const items = JSON.parse(event.target.result);
           if (Array.isArray(items)) {
             const tx = db.transaction("items", "readwrite");
             const store = tx.objectStore("items");
-            items.forEach(it => store.put(it));
+            items.forEach(it => {
+              delete it.id;
+              store.add(it);
+            });
             tx.oncomplete = () => {
-              alert("Dati ripristinati con successo!");
               renderItems();
+              showToast("Backup ripristinato con successo!");
             };
           }
         } catch (err) {
@@ -442,11 +508,6 @@
         }
       };
       reader.readAsText(file);
-    }
-
-    function escapeHtml(str) {
-      if (!str) return '';
-      return String(str).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
   </script>
 </body>
